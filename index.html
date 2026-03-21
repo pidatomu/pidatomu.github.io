@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mimbar Santri - Asisten Pidato Digital</title>
+    <title>Pidatomu - Asisten Pidato Digital</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
     <style>
@@ -196,14 +196,13 @@
             <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
                 <div class="max-w-xl">
                     <h2 class="text-3xl font-bold opacity-90 mb-2">Inspirasi Tema</h2>
-                    <p class="text-sm font-medium opacity-60">Pilih tema populer. Grid otomatis mengisi ruang secara simetris (2 Kolom Mobile, 5 Kolom Desktop).</p>
+                    <p class="text-sm font-medium opacity-60">Pilih tema populer untuk mengisi formulir secara otomatis.</p>
                 </div>
                 <div class="w-full md:w-48 h-2 bg-emerald-500/10 rounded-full overflow-hidden">
                     <div id="progressBar" class="h-full bg-emerald-500 transition-all duration-700" style="width: 0%"></div>
                 </div>
             </div>
 
-            <!-- Grid Fix: Cuma 2 Kolom (Mobile) atau 5 Kolom (PC) agar pas dengan kelipatan 10 -->
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-5" id="presetsGrid">
                 <!-- Data via JS -->
             </div>
@@ -223,12 +222,17 @@
     </main>
 
     <footer class="text-center py-20 opacity-40 text-xs md:text-sm">
-        <p>Mimbar Santri v3.4 &bull; Khidmah Dakwah Digital Pesantren</p>
+        <p>Mimbar Santri v3.5 &bull; Khidmah Dakwah Digital Pesantren</p>
     </footer>
 
-    <!-- Toast UI -->
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl transition-all opacity-0 translate-y-10 pointer-events-none z-[100] flex items-center gap-3">
-        <span id="toastMessage"></span>
+    <!-- Toast UI - Updated Styles for Light/Dark Mode Compatibility -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 glass-card border-emerald-500/30 text-emerald-900 dark:text-emerald-50 px-8 py-4 rounded-2xl shadow-2xl transition-all opacity-0 translate-y-10 pointer-events-none z-[100] flex items-center gap-3">
+        <div class="bg-emerald-500 rounded-full p-1 text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+        </div>
+        <span id="toastMessage" class="font-medium"></span>
     </div>
 
     <!-- Loading UI -->
@@ -236,12 +240,12 @@
         <div class="glass-card p-10 rounded-[3rem] max-w-xs w-full shadow-2xl">
             <div class="w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin mx-auto mb-6"></div>
             <h4 class="text-xl font-bold mb-2">Menyusun Hikmah...</h4>
-            <p class="text-sm opacity-60">Mohon tunggu sejenak, AI sedang bekerja.</p>
+            <p class="text-sm opacity-60">AI sedang bekerja merangkai naskah terbaik.</p>
         </div>
     </div>
 
     <script>
-        // API Key diset kosong karena akan diinjeksi otomatis oleh lingkungan Canvas
+        // API Key diset kosong sesuai instruksi lingkungan Canvas
         const apiKey = ""; 
 
         function toggleTheme() {
@@ -369,7 +373,7 @@
             const output = document.getElementById('outputContainer');
             const contentDiv = document.getElementById('speechContent');
 
-            if (!topic) {
+            if (!topic.trim()) {
                 showToast("Silakan tuliskan tema naskah Anda.");
                 return;
             }
@@ -394,7 +398,9 @@
                 try {
                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json'
+                        },
                         body: JSON.stringify({
                             contents: [{ parts: [{ text: userQuery }] }],
                             systemInstruction: { parts: [{ text: systemPrompt }] }
@@ -402,7 +408,6 @@
                     });
 
                     if (!response.ok) {
-                        // Jika 403 atau error lain, kita coba lagi sesuai aturan backoff
                         throw new Error(`API Error: ${response.status}`);
                     }
 
@@ -412,15 +417,13 @@
                     if (text) {
                         displayResult(text);
                     } else {
-                        throw new Error('Hasil kosong');
+                        throw new Error('Hasil AI tidak ditemukan');
                     }
                 } catch (e) {
                     if (retries < delays.length) {
-                        const delay = delays[retries];
-                        retries++;
-                        setTimeout(makeRequest, delay);
+                        setTimeout(makeRequest, delays[retries++]);
                     } else {
-                        showToast("Maaf, gagal menghubungi AI. Silakan periksa koneksi atau coba lagi nanti.");
+                        showToast("Koneksi gagal. Silakan coba klik tombol buat naskah sekali lagi.");
                         loading.classList.add('hidden');
                     }
                 }
@@ -433,6 +436,7 @@
             const loading = document.getElementById('loading');
             const output = document.getElementById('outputContainer');
 
+            // Format markdown to HTML
             const formatted = text
                 .replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-600 font-bold">$1</strong>')
                 .replace(/^# (.*$)/gm, '<h1 class="text-2xl md:text-3xl font-bold mb-6 border-b pb-4 opacity-90">$1</h1>')
@@ -454,17 +458,20 @@
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            showToast("Naskah berhasil disalin ke papan klip!");
+            showToast("Naskah berhasil disalin!");
         }
 
         function showToast(msg) {
             const t = document.getElementById('toast');
             document.getElementById('toastMessage').innerText = msg;
-            t.classList.replace('opacity-0', 'opacity-100');
-            t.classList.replace('translate-y-10', 'translate-y-0');
+            
+            // Trigger animation
+            t.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+            t.classList.add('opacity-100', 'translate-y-0');
+            
             setTimeout(() => {
-                t.classList.replace('opacity-100', 'opacity-0');
-                t.classList.replace('translate-y-0', 'translate-y-10');
+                t.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+                t.classList.remove('opacity-100', 'translate-y-0');
             }, 3000);
         }
 
