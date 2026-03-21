@@ -222,15 +222,13 @@
     </main>
 
     <footer class="text-center py-20 opacity-40 text-xs md:text-sm">
-        <p>Mimbar Santri v3.6 &bull; Khidmah Dakwah Digital Pesantren</p>
+        <p>Mimbar Santri v3.8 &bull; Khidmah Dakwah Digital Pesantren</p>
     </footer>
 
-    <!-- Toast UI - Updated for higher contrast and theme matching -->
+    <!-- Toast UI - Diperbarui agar dinamis bisa centang hijau atau silang merah -->
     <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-2xl transition-all opacity-0 translate-y-10 pointer-events-none z-[100] flex items-center gap-3">
-        <div class="bg-emerald-500 rounded-full p-1 text-white">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-            </svg>
+        <div id="toastIconDiv" class="bg-emerald-500 rounded-full p-1 text-white">
+            <!-- Ikon akan diinjeksi via JS (Success / Error) -->
         </div>
         <span id="toastMessage" class="font-bold"></span>
     </div>
@@ -244,9 +242,8 @@
         </div>
     </div>
 
-    <script>
-        // API Key dideklarasikan di awal blok script agar mudah diinjeksi oleh sistem Canvas
-        const apiKey = ""; 
+    <script
+        const apiKey = "AIzaSyCMOY4U01We8QvCHs9-QlhpEako8DK1P6Y"; 
 
         function toggleTheme() {
             const body = document.body;
@@ -339,7 +336,7 @@
                 card.onclick = () => {
                     document.getElementById('topic').value = item.topic;
                     document.getElementById('speechType').value = item.type;
-                    showToast(`Tema dipilih: ${item.topic}`);
+                    showToast(`Tema dipilih: ${item.topic}`, false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 };
                 
@@ -374,7 +371,7 @@
             const contentDiv = document.getElementById('speechContent');
 
             if (!topic.trim()) {
-                showToast("Silakan tuliskan tema naskah Anda.");
+                showToast("Silakan tuliskan tema naskah Anda terlebih dahulu.", true);
                 return;
             }
 
@@ -427,7 +424,7 @@
                     if (retries < delays.length) {
                         setTimeout(makeRequest, delays[retries++]);
                     } else {
-                        showToast("Maaf, gagal menghubungi AI. Silakan coba klik tombol buat naskah sekali lagi.");
+                        showToast("Koneksi gagal! Silakan masukkan API Key Google Anda di dalam kode untuk Vercel.", true);
                         loading.classList.add('hidden');
                     }
                 }
@@ -462,13 +459,24 @@
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            showToast("Naskah berhasil disalin!");
+            showToast("Naskah berhasil disalin!", false);
         }
 
-        function showToast(msg) {
+        function showToast(msg, isError = false) {
             const t = document.getElementById('toast');
             const msgEl = document.getElementById('toastMessage');
+            const iconDiv = document.getElementById('toastIconDiv');
+            
             msgEl.innerText = msg;
+            
+            // Ubah ikon berdasarkan Success/Error
+            if (isError) {
+                iconDiv.className = "bg-red-500 rounded-full p-1 text-white";
+                iconDiv.innerHTML = `<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`;
+            } else {
+                iconDiv.className = "bg-emerald-500 rounded-full p-1 text-white";
+                iconDiv.innerHTML = `<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
+            }
             
             // Atur warna toast berdasarkan mode tema saat ini
             if (document.body.classList.contains('dark')) {
