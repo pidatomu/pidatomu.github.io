@@ -93,6 +93,12 @@
             box-shadow: 0 10px 20px -5px rgba(212, 175, 55, 0.5);
         }
 
+        .btn-gold:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -121,6 +127,33 @@
             background: #059669;
             border-radius: 10px;
         }
+
+        /* API Key badge */
+        .api-badge-ok {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #059669;
+        }
+
+        .api-badge-empty {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #d97706;
+        }
+
+        /* Password toggle */
+        .input-wrapper { position: relative; }
+        .input-wrapper input { padding-right: 3rem; }
+        .toggle-eye {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        .toggle-eye:hover { opacity: 1; }
     </style>
 </head>
 
@@ -157,6 +190,42 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 md:px-8 -mt-16 relative z-20">
+
+        <!-- === PANEL API KEY (BARU) === -->
+        <div class="glass-card rounded-[2rem] p-5 md:p-7 mb-6 border-l-4 border-amber-400">
+            <div class="flex flex-wrap items-start gap-4">
+                <div class="flex-1 min-w-[200px]">
+                    <div class="flex items-center gap-2 mb-2">
+                        <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                        <label class="text-[11px] font-bold uppercase tracking-wider opacity-60">Google AI Studio API Key</label>
+                        <span id="apiKeyBadge" class="api-badge-empty text-[10px] font-bold px-2 py-0.5 rounded-full">Belum diisi</span>
+                    </div>
+                    <div class="input-wrapper">
+                        <input type="password" id="apiKeyInput" placeholder="Masukkan API Key Google AI Studio Anda..."
+                            class="custom-input w-full p-3 rounded-xl outline-none text-sm"
+                            oninput="handleApiKeyInput(this.value)" />
+                        <button class="toggle-eye" onclick="toggleApiKeyVisibility()" title="Tampilkan/sembunyikan key">
+                            <svg id="eyeIcon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="text-xs opacity-60 max-w-xs pt-6 leading-relaxed">
+                    <p>🔒 Key disimpan di browser Anda (localStorage), <strong>tidak dikirim ke server manapun</strong> selain Google API secara langsung.</p>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank"
+                        class="inline-flex items-center gap-1 mt-2 text-emerald-600 font-bold hover:underline">
+                        Dapatkan API Key gratis →
+                    </a>
+                </div>
+            </div>
+        </div>
 
         <!-- Formulir Generator -->
         <div class="glass-card rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 mb-12">
@@ -265,15 +334,13 @@
     </main>
 
     <footer class="text-center py-20 opacity-40 text-xs md:text-sm">
-        <p>Mimbar Santri v3.8 &bull; Khidmah Dakwah Digital Pesantren</p>
+        <p>Mimbar Santri v3.9 &bull; Khidmah Dakwah Digital Pesantren</p>
     </footer>
 
-    <!-- Toast UI - Diperbarui agar dinamis bisa centang hijau atau silang merah -->
+    <!-- Toast UI -->
     <div id="toast"
         class="fixed bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl shadow-2xl transition-all opacity-0 translate-y-10 pointer-events-none z-[100] flex items-center gap-3">
-        <div id="toastIconDiv" class="bg-emerald-500 rounded-full p-1 text-white">
-            <!-- Ikon akan diinjeksi via JS (Success / Error) -->
-        </div>
+        <div id="toastIconDiv" class="bg-emerald-500 rounded-full p-1 text-white"></div>
         <span id="toastMessage" class="font-bold"></span>
     </div>
 
@@ -290,7 +357,52 @@
     </div>
 
     <script>
-        const apiKey = "";
+        // ============================================================
+        // API KEY MANAGEMENT — tidak ada key yang di-hardcode di sini
+        // Key disimpan di localStorage browser pengguna
+        // ============================================================
+
+        const API_KEY_STORAGE = 'mimbar_santri_apikey';
+        // Model stabil (bukan preview yang bisa expired)
+        const GEMINI_MODEL = 'gemini-2.0-flash';
+
+        function getApiKey() {
+            return localStorage.getItem(API_KEY_STORAGE) || '';
+        }
+
+        function handleApiKeyInput(value) {
+            const trimmed = value.trim();
+            localStorage.setItem(API_KEY_STORAGE, trimmed);
+            updateApiKeyBadge(trimmed);
+        }
+
+        function updateApiKeyBadge(key) {
+            const badge = document.getElementById('apiKeyBadge');
+            if (key && key.length > 10) {
+                badge.textContent = '✓ Key tersimpan';
+                badge.className = 'api-badge-ok text-[10px] font-bold px-2 py-0.5 rounded-full';
+            } else {
+                badge.textContent = 'Belum diisi';
+                badge.className = 'api-badge-empty text-[10px] font-bold px-2 py-0.5 rounded-full';
+            }
+        }
+
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('apiKeyInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />`;
+            } else {
+                input.type = 'password';
+                icon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />`;
+            }
+        }
+
+        // ============================================================
 
         function toggleTheme() {
             const body = document.body;
@@ -410,12 +522,21 @@
         }
 
         async function generateSpeech() {
+            const apiKey = getApiKey();
+
+            // Validasi API Key dulu
+            if (!apiKey || apiKey.length < 10) {
+                showToast("Masukkan API Key Google AI Studio Anda terlebih dahulu.", true);
+                document.getElementById('apiKeyInput').focus();
+                document.getElementById('apiKeyInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
             const topic = document.getElementById('topic').value;
             const type = document.getElementById('speechType').value;
             const duration = document.getElementById('duration').value;
             const loading = document.getElementById('loading');
             const output = document.getElementById('outputContainer');
-            const contentDiv = document.getElementById('speechContent');
 
             if (!topic.trim()) {
                 showToast("Silakan tuliskan tema naskah Anda terlebih dahulu.", true);
@@ -436,18 +557,15 @@
             const userQuery = `Buatkan naskah ${type} bertema "${topic}" berdurasi ${duration}.`;
 
             let retries = 0;
-            const delays = [1000, 2000, 4000, 8000, 16000];
+            const delays = [1000, 2000, 4000];
 
             const makeRequest = async () => {
                 try {
-                    // Endpoint v1beta dari Gemini API
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
 
                     const response = await fetch(url, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             contents: [{ parts: [{ text: userQuery }] }],
                             systemInstruction: { parts: [{ text: systemPrompt }] }
@@ -456,7 +574,14 @@
 
                     if (!response.ok) {
                         const errData = await response.json();
-                        throw new Error(`API Error: ${response.status} - ${errData.error?.message || 'Forbidden'}`);
+                        const errMsg = errData.error?.message || 'Unknown error';
+                        const status = response.status;
+
+                        // Pesan error yang spesifik per status
+                        if (status === 400) throw new Error(`API Key tidak valid. Pastikan key Anda benar.`);
+                        if (status === 403) throw new Error(`Akses ditolak (403). Pastikan Generative Language API sudah diaktifkan di Google Cloud Console.`);
+                        if (status === 429) throw new Error(`Batas request tercapai (429). Tunggu sebentar lalu coba lagi.`);
+                        throw new Error(`Error ${status}: ${errMsg}`);
                     }
 
                     const result = await response.json();
@@ -468,10 +593,11 @@
                         throw new Error('Hasil AI tidak ditemukan dalam respons.');
                     }
                 } catch (e) {
+                    console.error('Request error:', e.message);
                     if (retries < delays.length) {
                         setTimeout(makeRequest, delays[retries++]);
                     } else {
-                        showToast("Koneksi gagal! Silakan masukkan API Key Google Anda di dalam kode untuk Vercel.", true);
+                        showToast(e.message || "Gagal terhubung ke AI. Periksa API Key Anda.", true);
                         loading.classList.add('hidden');
                     }
                 }
@@ -484,7 +610,6 @@
             const loading = document.getElementById('loading');
             const output = document.getElementById('outputContainer');
 
-            // Format markdown ke HTML secara sederhana
             const formatted = text
                 .replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-600 font-bold">$1</strong>')
                 .replace(/^# (.*$)/gm, '<h1 class="text-2xl md:text-3xl font-bold mb-6 border-b pb-4 opacity-90">$1</h1>')
@@ -516,7 +641,6 @@
 
             msgEl.innerText = msg;
 
-            // Ubah ikon berdasarkan Success/Error
             if (isError) {
                 iconDiv.className = "bg-red-500 rounded-full p-1 text-white";
                 iconDiv.innerHTML = `<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>`;
@@ -525,7 +649,6 @@
                 iconDiv.innerHTML = `<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
             }
 
-            // Atur warna toast berdasarkan mode tema saat ini
             if (document.body.classList.contains('dark')) {
                 t.style.backgroundColor = 'rgba(30, 41, 59, 0.95)';
                 t.style.color = '#f1f5f9';
@@ -534,17 +657,25 @@
                 t.style.color = '#064e3b';
             }
 
-            // Animasi tampil
             t.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
             t.classList.add('opacity-100', 'translate-y-0');
 
             setTimeout(() => {
                 t.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
                 t.classList.remove('opacity-100', 'translate-y-0');
-            }, 3000);
+            }, 4000);
         }
 
-        window.onload = loadMorePresets;
+        // Inisialisasi saat halaman load
+        window.onload = function() {
+            loadMorePresets();
+            // Load API key dari localStorage jika sudah pernah diisi
+            const savedKey = getApiKey();
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+                updateApiKeyBadge(savedKey);
+            }
+        };
     </script>
 </body>
 
