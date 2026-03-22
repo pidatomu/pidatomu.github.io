@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mimbar Santri - Asisten Pidato Digital</title>
+    <title>Pidatomu - Asisten Pidato Digital</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Quicksand:wght@500;700&display=swap"
@@ -82,21 +82,38 @@
             box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
         }
 
-        .btn-gold {
-            background: linear-gradient(to right, #d4af37, #f59e0b);
-            transition: all 0.3s ease;
-            color: #064e3b;
+        /* Tombol utama — tema light */
+        body.light .btn-primary {
+            background: #1e293b;
+            color: #f8fafc;
+            box-shadow: 0 4px 24px -4px rgba(30,41,59,0.18);
         }
-
-        .btn-gold:hover {
+        body.light .btn-primary:hover {
+            background: #0f172a;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(212, 175, 55, 0.5);
+            box-shadow: 0 12px 28px -6px rgba(30,41,59,0.28);
         }
 
-        .btn-gold:disabled {
-            opacity: 0.5;
+        /* Tombol utama — tema dark */
+        body.dark .btn-primary {
+            background: linear-gradient(135deg, #d4af37, #f59e0b);
+            color: #1a1200;
+            box-shadow: 0 4px 24px -4px rgba(212,175,55,0.22);
+        }
+        body.dark .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px -6px rgba(212,175,55,0.38);
+        }
+
+        .btn-primary {
+            transition: all 0.3s ease;
+            font-weight: 500; /* tidak terlalu tebal */
+            letter-spacing: 0.01em;
+        }
+        .btn-primary:disabled {
+            opacity: 0.45;
             cursor: not-allowed;
-            transform: none;
+            transform: none !important;
         }
 
         @keyframes fadeIn {
@@ -181,7 +198,7 @@
                 class="inline-block px-4 py-1.5 rounded-full bg-black/20 border border-white/20 text-emerald-100 text-[10px] md:text-xs font-bold tracking-[0.2em] uppercase mb-4 backdrop-blur-md">
                 Pondok Pesantren Digital
             </div>
-            <h1 class="text-3xl md:text-6xl font-bold mb-4 tracking-tight">Mimbar Santri<span
+            <h1 class="text-3xl md:text-6xl font-bold mb-4 tracking-tight">Pidatomu<span
                     class="text-amber-400">.</span></h1>
             <p class="text-emerald-50/70 text-sm md:text-xl max-w-2xl mx-auto font-light leading-relaxed">
                 Asisten naskah pidato otomatis untuk syiar dakwah santri Nusantara.
@@ -191,41 +208,71 @@
 
     <main class="max-w-7xl mx-auto px-4 md:px-8 -mt-16 relative z-20">
 
-        <!-- === PANEL API KEY (BARU) === -->
+        <!-- === PANEL API KEY === -->
         <div class="glass-card rounded-[2rem] p-5 md:p-7 mb-6 border-l-4 border-amber-400">
-            <div class="flex flex-wrap items-start gap-4">
-                <div class="flex-1 min-w-[200px]">
-                    <div class="flex items-center gap-2 mb-2">
-                        <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                        </svg>
-                        <label class="text-[11px] font-bold uppercase tracking-wider opacity-60">Google AI Studio API Key</label>
-                        <span id="apiKeyBadge" class="api-badge-empty text-[10px] font-bold px-2 py-0.5 rounded-full">Belum diisi</span>
+            <!-- Tab selector -->
+            <div class="flex gap-2 mb-5">
+                <button id="tabLocal" onclick="setMode('local')"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-500 text-white">
+                    🔑 API Key di Browser
+                </button>
+                <button id="tabVercel" onclick="setMode('vercel')"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all opacity-50 hover:opacity-80">
+                    ☁️ Vercel Env (Aman)
+                </button>
+            </div>
+
+            <!-- Panel: localStorage mode -->
+            <div id="panelLocal">
+                <div class="flex flex-wrap items-start gap-4">
+                    <div class="flex-1 min-w-[200px]">
+                        <div class="flex items-center gap-2 mb-2">
+                            <label class="text-[11px] font-bold uppercase tracking-wider opacity-60">Google AI Studio API Key</label>
+                            <span id="apiKeyBadge" class="api-badge-empty text-[10px] font-bold px-2 py-0.5 rounded-full">Belum diisi</span>
+                        </div>
+                        <div class="input-wrapper">
+                            <input type="password" id="apiKeyInput" placeholder="Paste API Key di sini..."
+                                class="custom-input w-full p-3 rounded-xl outline-none text-sm"
+                                oninput="handleApiKeyInput(this.value)" />
+                            <button class="toggle-eye" onclick="toggleApiKeyVisibility()" title="Tampilkan/sembunyikan key">
+                                <svg id="eyeIcon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    <div class="input-wrapper">
-                        <input type="password" id="apiKeyInput" placeholder="Masukkan API Key Google AI Studio Anda..."
-                            class="custom-input w-full p-3 rounded-xl outline-none text-sm"
-                            oninput="handleApiKeyInput(this.value)" />
-                        <button class="toggle-eye" onclick="toggleApiKeyVisibility()" title="Tampilkan/sembunyikan key">
-                            <svg id="eyeIcon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                        </button>
+                    <div class="text-xs opacity-55 max-w-xs pt-6 leading-relaxed">
+                        <p>🔒 Key hanya di browser ini (localStorage). Hilang jika clear cache. Tidak cocok untuk dishare ke orang lain.</p>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank"
+                            class="inline-flex items-center gap-1 mt-2 text-emerald-600 font-semibold hover:underline">
+                            Dapatkan API Key gratis →
+                        </a>
                     </div>
                 </div>
-                <div class="text-xs opacity-60 max-w-xs pt-6 leading-relaxed">
-                    <p>🔒 Key disimpan di browser Anda (localStorage), <strong>tidak dikirim ke server manapun</strong> selain Google API secara langsung.</p>
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank"
-                        class="inline-flex items-center gap-1 mt-2 text-emerald-600 font-bold hover:underline">
-                        Dapatkan API Key gratis →
-                    </a>
+            </div>
+
+            <!-- Panel: Vercel env mode -->
+            <div id="panelVercel" class="hidden">
+                <div class="flex items-start gap-4 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/15">
+                    <div class="text-2xl">☁️</div>
+                    <div class="text-sm leading-relaxed space-y-1.5">
+                        <p class="font-bold opacity-90">Mode Vercel Environment Variable aktif</p>
+                        <p class="opacity-55">API Key disimpan di server Vercel — tidak pernah terlihat di browser. Cocok untuk deployment publik.</p>
+                        <div class="text-xs font-mono bg-black/5 dark:bg-white/5 rounded-lg px-3 py-2 mt-2 space-y-1 opacity-70">
+                            <p class="font-bold not-italic opacity-80">Cara setup:</p>
+                            <p>1. Vercel Dashboard → Project → Settings</p>
+                            <p>2. Environment Variables → Add New</p>
+                            <p>3. Name: <strong>GEMINI_API_KEY</strong></p>
+                            <p>4. Value: (paste API key kamu)</p>
+                            <p>5. Redeploy project</p>
+                        </div>
+                        <p class="text-[11px] opacity-40 mt-1">Pastikan file <code>api/generate.js</code> sudah ada di project Vercel kamu.</p>
+                    </div>
                 </div>
             </div>
         </div>
+
 
         <!-- Formulir Generator -->
         <div class="glass-card rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-10 mb-12">
@@ -269,10 +316,10 @@
             </div>
 
             <button onclick="generateSpeech()" id="btnGenerate"
-                class="btn-gold w-full mt-10 font-bold py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 text-lg group">
+                class="btn-primary w-full mt-10 py-5 rounded-2xl flex items-center justify-center gap-3 text-base group">
                 <span>Susun Naskah Sekarang</span>
                 <svg xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6 transform group-hover:translate-x-1 transition-transform" fill="none"
+                    class="h-5 w-5 transform group-hover:translate-x-1 transition-transform" fill="none"
                     viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -334,7 +381,7 @@
     </main>
 
     <footer class="text-center py-20 opacity-40 text-xs md:text-sm">
-        <p>Mimbar Santri v3.9 &bull; Khidmah Dakwah Digital Pesantren</p>
+        <p>Pidatomu v3.9 &bull; Khidmah Dakwah Digital Pesantren</p>
     </footer>
 
     <!-- Toast UI -->
@@ -358,13 +405,38 @@
 
     <script>
         // ============================================================
-        // API KEY MANAGEMENT — tidak ada key yang di-hardcode di sini
-        // Key disimpan di localStorage browser pengguna
+        // MODE: 'local' = pakai localStorage, 'vercel' = pakai /api/generate
         // ============================================================
-
         const API_KEY_STORAGE = 'mimbar_santri_apikey';
-        // Model stabil (bukan preview yang bisa expired)
-        const GEMINI_MODEL = 'gemini-2.0-flash';
+        const MODE_STORAGE    = 'mimbar_santri_mode';
+        const GEMINI_MODEL    = 'gemini-2.0-flash';
+
+        let currentMode = localStorage.getItem(MODE_STORAGE) || 'local';
+
+        function setMode(mode) {
+            currentMode = mode;
+            localStorage.setItem(MODE_STORAGE, mode);
+
+            const tabLocal   = document.getElementById('tabLocal');
+            const tabVercel  = document.getElementById('tabVercel');
+            const panelLocal  = document.getElementById('panelLocal');
+            const panelVercel = document.getElementById('panelVercel');
+
+            const activeClass   = 'bg-emerald-500 text-white opacity-100';
+            const inactiveClass = 'opacity-50 hover:opacity-80';
+
+            if (mode === 'local') {
+                tabLocal.className  = `px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeClass}`;
+                tabVercel.className = `px-4 py-2 rounded-xl text-xs font-bold transition-all ${inactiveClass}`;
+                panelLocal.classList.remove('hidden');
+                panelVercel.classList.add('hidden');
+            } else {
+                tabVercel.className = `px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeClass}`;
+                tabLocal.className  = `px-4 py-2 rounded-xl text-xs font-bold transition-all ${inactiveClass}`;
+                panelVercel.classList.remove('hidden');
+                panelLocal.classList.add('hidden');
+            }
+        }
 
         function getApiKey() {
             return localStorage.getItem(API_KEY_STORAGE) || '';
@@ -522,70 +594,79 @@
         }
 
         async function generateSpeech() {
-            const apiKey = getApiKey();
-
-            // Validasi API Key dulu
-            if (!apiKey || apiKey.length < 10) {
-                showToast("Masukkan API Key Google AI Studio Anda terlebih dahulu.", true);
-                document.getElementById('apiKeyInput').focus();
-                document.getElementById('apiKeyInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
-            }
-
-            const topic = document.getElementById('topic').value;
-            const type = document.getElementById('speechType').value;
+            const topic    = document.getElementById('topic').value;
+            const type     = document.getElementById('speechType').value;
             const duration = document.getElementById('duration').value;
-            const loading = document.getElementById('loading');
-            const output = document.getElementById('outputContainer');
+            const loading  = document.getElementById('loading');
+            const output   = document.getElementById('outputContainer');
 
             if (!topic.trim()) {
                 showToast("Silakan tuliskan tema naskah Anda terlebih dahulu.", true);
                 return;
             }
 
+            // Validasi mode local — pastikan key ada
+            if (currentMode === 'local') {
+                const apiKey = getApiKey();
+                if (!apiKey || apiKey.length < 10) {
+                    showToast("Masukkan API Key Google AI Studio terlebih dahulu.", true);
+                    document.getElementById('apiKeyInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+
             loading.classList.remove('hidden');
             output.classList.add('hidden');
-
-            const systemPrompt = `Anda adalah asisten ahli pembuat teks pidato/ceramah santri.
-            Teks harus mencakup:
-            1. Muqaddimah Bahasa Arab yang indah (tulis dengan harakat).
-            2. Isi yang menyentuh hati dan relevan dengan kehidupan santri.
-            3. Minimal 1 Ayat Al-Qur'an atau Hadis beserta artinya.
-            4. Gunakan poin-poin hikmah agar mudah dihafal.
-            5. Tambahkan [Petunjuk Ekspresi] di dalam kurung siku.`;
-
-            const userQuery = `Buatkan naskah ${type} bertema "${topic}" berdurasi ${duration}.`;
 
             let retries = 0;
             const delays = [1000, 2000, 4000];
 
             const makeRequest = async () => {
                 try {
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+                    let text;
 
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: userQuery }] }],
-                            systemInstruction: { parts: [{ text: systemPrompt }] }
-                        })
-                    });
+                    if (currentMode === 'vercel') {
+                        // ── Mode Vercel: panggil serverless function ──
+                        const response = await fetch('/api/generate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ topic, type, duration })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.error || `Error ${response.status}`);
+                        text = data.result;
 
-                    if (!response.ok) {
-                        const errData = await response.json();
-                        const errMsg = errData.error?.message || 'Unknown error';
-                        const status = response.status;
+                    } else {
+                        // ── Mode Local: panggil Google API langsung ──
+                        const apiKey = getApiKey();
+                        const systemPrompt = `Anda adalah asisten ahli pembuat teks pidato/ceramah santri.
+Teks harus mencakup:
+1. Muqaddimah Bahasa Arab yang indah (tulis dengan harakat).
+2. Isi yang menyentuh hati dan relevan dengan kehidupan santri.
+3. Minimal 1 Ayat Al-Qur'an atau Hadis beserta artinya.
+4. Gunakan poin-poin hikmah agar mudah dihafal.
+5. Tambahkan [Petunjuk Ekspresi] di dalam kurung siku.`;
+                        const userQuery = `Buatkan naskah ${type} bertema "${topic}" berdurasi ${duration}.`;
 
-                        // Pesan error yang spesifik per status
-                        if (status === 400) throw new Error(`API Key tidak valid. Pastikan key Anda benar.`);
-                        if (status === 403) throw new Error(`Akses ditolak (403). Pastikan Generative Language API sudah diaktifkan di Google Cloud Console.`);
-                        if (status === 429) throw new Error(`Batas request tercapai (429). Tunggu sebentar lalu coba lagi.`);
-                        throw new Error(`Error ${status}: ${errMsg}`);
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: userQuery }] }],
+                                systemInstruction: { parts: [{ text: systemPrompt }] }
+                            })
+                        });
+                        const result = await response.json();
+                        if (!response.ok) {
+                            const status = response.status;
+                            if (status === 400) throw new Error('API Key tidak valid.');
+                            if (status === 403) throw new Error('Akses ditolak (403). Aktifkan Generative Language API di Google Cloud Console.');
+                            if (status === 429) throw new Error('Batas request tercapai. Tunggu sebentar.');
+                            throw new Error(`Error ${status}: ${result.error?.message}`);
+                        }
+                        text = result.candidates?.[0]?.content?.parts?.[0]?.text;
                     }
-
-                    const result = await response.json();
-                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
                     if (text) {
                         displayResult(text);
@@ -597,7 +678,7 @@
                     if (retries < delays.length) {
                         setTimeout(makeRequest, delays[retries++]);
                     } else {
-                        showToast(e.message || "Gagal terhubung ke AI. Periksa API Key Anda.", true);
+                        showToast(e.message || "Gagal terhubung ke AI.", true);
                         loading.classList.add('hidden');
                     }
                 }
@@ -669,7 +750,8 @@
         // Inisialisasi saat halaman load
         window.onload = function() {
             loadMorePresets();
-            // Load API key dari localStorage jika sudah pernah diisi
+            // Restore mode & API key dari localStorage
+            setMode(currentMode);
             const savedKey = getApiKey();
             if (savedKey) {
                 document.getElementById('apiKeyInput').value = savedKey;
@@ -678,5 +760,4 @@
         };
     </script>
 </body>
-
 </html>
