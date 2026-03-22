@@ -1,11 +1,3 @@
-// api/generate.js — Vercel Serverless Function
-// API Key tersimpan di Environment Variable Vercel, TIDAK pernah sampai ke browser.
-//
-// Setup:
-//   1. Di Vercel Dashboard → Settings → Environment Variables
-//   2. Tambahkan: GEMINI_API_KEY = (isi API key kamu)
-//   3. Redeploy
-
 const GEMINI_MODEL = 'gemini-2.0-flash';
 
 export default async function handler(req, res) {
