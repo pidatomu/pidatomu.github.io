@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
+import Navbar from "@/components/Navbar";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -15,9 +16,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Pidatomu — Asisten Naskah Pidato",
+  title: "Pidatomu — Asisten Naskah Pidato Islami",
   description:
-    "Buat naskah khutbah, kultum, dan pidato islami dalam hitungan detik.",
+    "Buat naskah khutbah, kultum, dan pidato islami berkualitas tinggi dalam hitungan detik. Export ke Word, PDF, atau TXT.",
 };
 
 export default function RootLayout({
@@ -28,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${spaceGrotesk.variable} ${inter.variable}`}>
+        <Navbar />
         {children}
       </body>
     </html>

@@ -7,13 +7,13 @@ interface GenerateParams {
   systemPrompt: string;
 }
 
-export async function generateWithGemini({
+export async function streamWithGemini({
   kategori,
   tema,
   durasi,
   systemPrompt,
-}: GenerateParams): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+}: GenerateParams): Promise<ReadableStream<Uint8Array>> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${process.env.GEMINI_API_KEY}`;
 
   const res = await fetch(url, {
     method: "POST",
@@ -32,7 +32,7 @@ export async function generateWithGemini({
       ],
       generationConfig: { temperature: 0.8, maxOutputTokens: 2048 },
     }),
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(30_000),
   });
 
   if (!res.ok) {
@@ -40,12 +40,48 @@ export async function generateWithGemini({
     throw new GeminiError(`Gemini API error ${res.status}: ${body}`);
   }
 
-  const data = await res.json();
-  const content = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!res.body) throw new GeminiError("Gemini API tidak mengembalikan stream");
 
-  if (!content) {
-    throw new GeminiError("Gemini API tidak mengembalikan konten");
-  }
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
 
-  return content as string;
+  // Parse SSE dari Gemini → stream teks mentah chunk per chunk
+  const readable = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = res.body!.getReader();
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              const token: string =
+                json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+              if (token) {
+                controller.enqueue(encoder.encode(token));
+              }
+            } catch {
+              // skip malformed chunk
+            }
+          }
+        }
+      } finally {
+        controller.close();
+        reader.releaseLock();
+      }
+    },
+  });
+
+  return readable;
 }

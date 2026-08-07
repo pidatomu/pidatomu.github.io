@@ -1,35 +1,71 @@
-import { generateWithGroq, GroqError } from "./groq";
-import { generateWithGemini, GeminiError } from "./gemini";
+import { streamWithGroq, GroqError } from "./groq";
+import { streamWithGemini, GeminiError } from "./gemini";
 
-const SYSTEM_PROMPT = `Kamu adalah penulis naskah pidato/ceramah/khutbah berbahasa Indonesia
-yang islami, natural, dan enak dibaca saat disampaikan lisan. Sertakan pembuka
-(salam, muqaddimah, puji syukur), isi yang runtut sesuai tema, dan penutup
-(kesimpulan, doa, salam penutup). Gunakan bahasa yang sesuai konteks pesantren/sekolah
-Islam, sopan, dan tidak kaku.`;
+export type Provider = "groq" | "gemini";
+export type GayaBahasa = "formal" | "semi-formal" | "modern-pesantren";
 
-export interface GenerateResult {
-  konten: string;
-  provider: "groq" | "gemini";
+export interface PersonalisasiParams {
+  namaPenceramah?: string;
+  namaLokasi?: string;
+  tanggal?: string;
+  gayaBahasa?: GayaBahasa;
 }
 
-export async function generateNaskahPidato(params: {
+function buildSystemPrompt(personalisasi: PersonalisasiParams): string {
+  const { namaPenceramah, namaLokasi, tanggal, gayaBahasa = "formal" } = personalisasi;
+
+  const gayaMap: Record<GayaBahasa, string> = {
+    "formal": "bahasa Indonesia baku dan formal, sesuai standar ceramah resmi",
+    "semi-formal": "bahasa Indonesia yang santai namun tetap sopan, tidak terlalu kaku",
+    "modern-pesantren": "bahasa khas pesantren modern: campuran Indonesia dan beberapa kata Arab umum, akrab, penuh semangat",
+  };
+
+  const personaLines = [
+    namaPenceramah ? `Nama penceramah/khatib: ${namaPenceramah}. Sebutkan namanya di pembuka naskah dengan kalimat yang natural.` : "",
+    namaLokasi ? `Lokasi acara: ${namaLokasi}. Sertakan di konteks pembuka bila sesuai.` : "",
+    tanggal ? `Tanggal acara: ${tanggal}.` : "",
+  ].filter(Boolean).join("\n");
+
+  return `Kamu adalah penulis naskah pidato/ceramah/khutbah berbahasa Indonesia yang islami, natural, dan enak dibaca saat disampaikan lisan.
+
+Gunakan format berikut (gunakan heading markdown **bold** untuk setiap bagian):
+
+**PEMBUKA**
+(salam pembuka, muqaddimah, puji syukur kepada Allah, sholawat kepada Nabi${namaPenceramah ? `, perkenalan singkat ${namaPenceramah}` : ""})
+
+**ISI**
+(penjelasan tema secara runtut, sertakan dalil/hadits bila relevan, contoh nyata yang relatable)
+
+**PENUTUP**
+(kesimpulan, doa penutup, salam penutup${namaPenceramah ? `, termasuk nama ${namaPenceramah} sebagai penutup` : ""})
+
+${personaLines ? `\nINFORMASI TAMBAHAN:\n${personaLines}` : ""}
+
+Gaya bahasa: ${gayaMap[gayaBahasa]}.
+PENTING: Jangan tambahkan kata "markdown" atau simbol lain selain **bold** untuk heading. Tulis naskah yang siap dibacakan, bukan template.`;
+}
+
+export async function streamNaskahPidato(params: {
   kategori: string;
   tema: string;
   durasi: number;
-}): Promise<GenerateResult> {
-  const input = { ...params, systemPrompt: SYSTEM_PROMPT };
+  personalisasi?: PersonalisasiParams;
+}): Promise<{ stream: ReadableStream<Uint8Array>; provider: Provider }> {
+  const { kategori, tema, durasi, personalisasi = {} } = params;
+  const systemPrompt = buildSystemPrompt(personalisasi);
+  const input = { kategori, tema, durasi, systemPrompt };
 
   try {
-    const konten = await generateWithGroq(input);
-    return { konten, provider: "groq" };
+    const stream = await streamWithGroq(input);
+    return { stream, provider: "groq" };
   } catch (err) {
     if (!(err instanceof GroqError)) throw err;
     console.warn("[generate] Groq gagal, fallback ke Gemini:", err.message);
   }
 
   try {
-    const konten = await generateWithGemini(input);
-    return { konten, provider: "gemini" };
+    const stream = await streamWithGemini(input);
+    return { stream, provider: "gemini" };
   } catch (err) {
     if (err instanceof GeminiError) {
       throw new Error(
