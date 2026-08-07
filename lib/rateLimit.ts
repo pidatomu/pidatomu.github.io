@@ -3,6 +3,8 @@ import { createServiceClient } from "./supabase/server";
 const LIMIT_GUEST_PER_DAY = 5;
 const LIMIT_USER_PER_DAY = 15;
 
+const isDev = process.env.NODE_ENV === "development";
+
 export interface RateLimitCheck {
   allowed: boolean;
   currentCount: number;
@@ -16,6 +18,11 @@ export async function checkAndIncrementRateLimit(owner: {
   type: "guest" | "user";
   ref: string;
 }): Promise<RateLimitCheck> {
+  // Development: unlimited
+  if (isDev) {
+    return { allowed: true, currentCount: 0, limit: 9999 };
+  }
+
   const supabase = createServiceClient();
   const maxPerDay =
     owner.type === "guest" ? LIMIT_GUEST_PER_DAY : LIMIT_USER_PER_DAY;
@@ -27,7 +34,6 @@ export async function checkAndIncrementRateLimit(owner: {
   });
 
   if (error) {
-    // Kalau RPC error, fail-safe: jangan block user, tapi log biar ketauan
     console.error("[rateLimit] RPC error:", error.message);
     return { allowed: true, currentCount: 0, limit: maxPerDay };
   }

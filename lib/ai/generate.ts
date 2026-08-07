@@ -1,5 +1,5 @@
-import { streamWithGroq, GroqError } from "./groq";
-import { streamWithGemini, GeminiError } from "./gemini";
+import { streamWithGroq, generateWithGroq, GroqError } from "./groq";
+import { streamWithGemini, generateWithGemini, GeminiError } from "./gemini";
 
 export type Provider = "groq" | "gemini";
 export type GayaBahasa = "formal" | "semi-formal" | "modern-pesantren";
@@ -42,18 +42,32 @@ Gunakan format berikut (gunakan heading markdown **bold** untuk setiap bagian):
 ${personaLines ? `\nINFORMASI TAMBAHAN:\n${personaLines}` : ""}
 
 Gaya bahasa: ${gayaMap[gayaBahasa]}.
-PENTING: Jangan tambahkan kata "markdown" atau simbol lain selain **bold** untuk heading. Tulis naskah yang siap dibacakan, bukan template.`;
+PENTING: Naskah harus memiliki panjang yang KONSISTEN dengan target kata yang diminta. Jangan terlalu pendek atau terlalu panjang. Tulis naskah yang siap dibacakan, bukan template. Jangan tambahkan kata "markdown" atau simbol lain selain **bold** untuk heading.`;
 }
+
+function buildGenerateUserPrompt(kategori: string, tema: string, durasi: number, targetKata: number): string {
+  return `Buatkan naskah untuk kategori "${kategori}" dengan tema "${tema}".
+
+DURASI: ${durasi} menit
+TARGET KATA: sekitar ${targetKata} kata (±10%)
+
+Naskah HARUS memiliki panjang yang KONSISTEN dengan target di atas. Jangan terlalu pendek atau terlalu panjang. Tulis naskah yang lengkap dari pembuka hingga penutup.`;
+}
+
+// ─── Streaming (primary) ─────────────────────────────────────────────────────
 
 export async function streamNaskahPidato(params: {
   kategori: string;
   tema: string;
   durasi: number;
+  targetKata: number;
   personalisasi?: PersonalisasiParams;
 }): Promise<{ stream: ReadableStream<Uint8Array>; provider: Provider }> {
-  const { kategori, tema, durasi, personalisasi = {} } = params;
+  const { kategori, tema, durasi, targetKata, personalisasi = {} } = params;
   const systemPrompt = buildSystemPrompt(personalisasi);
-  const input = { kategori, tema, durasi, systemPrompt };
+  const userPrompt = buildGenerateUserPrompt(kategori, tema, durasi, targetKata);
+  const maxTokens = Math.min(Math.max(Math.round(targetKata * 1.5), 1024), 8192);
+  const input = { kategori, tema, durasi, targetKata, maxTokens, systemPrompt, userPrompt };
 
   try {
     const stream = await streamWithGroq(input);
@@ -68,10 +82,45 @@ export async function streamNaskahPidato(params: {
     return { stream, provider: "gemini" };
   } catch (err) {
     if (err instanceof GeminiError) {
-      throw new Error(
-        "Kedua penyedia AI (Groq & Gemini) gagal merespons. Coba lagi sebentar lagi."
-      );
+      throw new Error("Kedua penyedia AI (Groq & Gemini) gagal merespons. Coba lagi sebentar lagi.");
     }
     throw err;
   }
+}
+
+// ─── Non-streaming (for refine endpoint internal use) ────────────────────────
+
+export async function generateNaskahPidato(params: {
+  kategori: string;
+  tema: string;
+  durasi: number;
+  targetKata: number;
+  personalisasi?: PersonalisasiParams;
+}): Promise<{ text: string; provider: Provider; attempts: number }> {
+  const { kategori, tema, durasi, targetKata, personalisasi = {} } = params;
+  const systemPrompt = buildSystemPrompt(personalisasi);
+  const userPrompt = buildGenerateUserPrompt(kategori, tema, durasi, targetKata);
+  const maxTokens = Math.min(Math.max(Math.round(targetKata * 1.5), 1024), 8192);
+
+  let text = "";
+  let provider: Provider = "groq";
+
+  try {
+    text = await generateWithGroq({ kategori, tema, durasi, targetKata, maxTokens, systemPrompt, userPrompt });
+    provider = "groq";
+  } catch (err) {
+    if (!(err instanceof GroqError)) throw err;
+    console.warn("[generate] Groq gagal, fallback ke Gemini:", err.message);
+    try {
+      text = await generateWithGemini({ kategori, tema, durasi, targetKata, maxTokens, systemPrompt, userPrompt });
+      provider = "gemini";
+    } catch (err2) {
+      if (err2 instanceof GeminiError) {
+        throw new Error("Kedua penyedia AI (Groq & Gemini) gagal merespons. Coba lagi sebentar lagi.");
+      }
+      throw err2;
+    }
+  }
+
+  return { text, provider, attempts: 1 };
 }

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @source "./**/*.{js,jsx,ts,tsx,mdx}";
 @source "../lib/**/*.{js,jsx,ts,tsx}";
+@source "../components/**/*.{js,jsx,ts,tsx}";
 
 :root {
   --color-ink: #0a0a0a;
@@ -12,16 +13,368 @@
   --border-w: 3px;
 }
 
+html.dark {
+  --color-ink: #e8e4d8;
+  --color-bg: #1a1a1a;
+  --color-card: #242424;
+  --color-accent: #ffd400;
+  --color-accent-2: #7ac943;
+  --color-danger: #ff5470;
+}
+
+/* ─── Dark Mode: Full Override ─────────────────────────────────────────────── */
+
+html.dark body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+}
+
+html.dark .navbar {
+  background: var(--color-card);
+  border-color: var(--color-ink);
+}
+
+html.dark .brutal-card {
+  background: var(--color-card);
+  border-color: var(--color-ink);
+  box-shadow: 8px 8px 0 var(--color-ink);
+}
+
+html.dark .brutal-btn {
+  border-color: var(--color-ink);
+  box-shadow: 5px 5px 0 var(--color-ink);
+}
+
+html.dark .brutal-input {
+  background: #2a2a2a;
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+html.dark select {
+  background: #2a2a2a;
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+html.dark textarea {
+  background: #2a2a2a !important;
+  color: var(--color-ink) !important;
+}
+
+html.dark input[type="text"] {
+  background: #2a2a2a;
+  color: var(--color-ink);
+}
+
+html.dark .gaya-chip {
+  background: var(--color-bg);
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
+html.dark .suggestion-chip {
+  background: var(--color-bg);
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
+html.dark .naskah-content {
+  color: var(--color-ink);
+}
+
+html.dark .naskah-heading {
+  color: var(--color-ink);
+  border-bottom-color: var(--color-ink);
+}
+
+html.dark .naskah-paragraph {
+  color: var(--color-ink);
+}
+
+html.dark .stats-pill {
+  background: var(--color-card);
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
+html.dark .brutal-badge {
+  border-color: var(--color-ink);
+}
+
+html.dark .navbar-badge {
+  border-color: var(--color-ink);
+}
+
+html.dark .navbar-link {
+  color: var(--color-ink);
+}
+
+html.dark .form-label {
+  color: var(--color-ink);
+}
+
+html.dark .streaming-cursor {
+  color: var(--color-accent);
+}
+
+html.dark .skeleton-line {
+  background: linear-gradient(90deg, #333 25%, #3a3a3a 50%, #333 75%);
+  background-size: 200% 100%;
+}
+
+html.dark code {
+  background: #2a2a2a;
+  border-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
+html.dark pre {
+  background: #2a2a2a;
+  color: var(--color-ink);
+}
+
+html.dark ::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-ink);
+  border-color: var(--color-bg);
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-body), system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.font-display {
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--color-accent); }
+  50% { border-color: var(--color-ink); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out both;
+}
+
+.animate-slide-right {
+  animation: slideInRight 0.3s ease-out both;
+}
+
+.animate-slide-left {
+  animation: slideInLeft 0.3s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out both;
+}
+
+/* Staggered children animation */
+.stagger-children > * {
+  animation: fadeIn 0.3s ease-out both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+
+/* ─── Navbar ─────────────────────────────────────────────────────────────────── */
+
+.navbar {
+  border-bottom: var(--border-w) solid var(--color-ink);
+  background: var(--color-card);
+  transition: background-color 0.3s ease;
+}
+
+.navbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.navbar-logo {
   font-family: var(--font-display), sans-serif;
   font-weight: 700;
+  font-size: 1.125rem;
   letter-spacing: -0.02em;
+  color: var(--color-ink);
+  text-decoration: none;
+  display: flex;
+  align-items: baseline;
+}
+
+.navbar-logo-dot {
+  color: var(--color-accent);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.navbar-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.35rem 0.625rem;
+  border: 2px solid transparent;
+  color: var(--color-ink);
+  text-decoration: none;
+  transition: background 0.1s ease, border-color 0.1s ease, transform 0.08s ease;
+}
+
+.navbar-link:hover {
+  background: var(--color-accent);
+  transform: translate(1px, 1px);
+}
+
+.navbar-link--active {
+  border-bottom: 2px solid var(--color-ink);
+}
+
+.navbar-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.5rem;
+  border: 2px solid var(--color-ink);
+  background: var(--color-accent-2);
+  transform: rotate(-2deg);
+  white-space: nowrap;
+}
+
+/* ─── Form Labels ───────────────────────────────────────────────────────────── */
+
+.form-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.375rem;
+}
+
+/* ─── Gaya Bahasa Chips ─────────────────────────────────────────────────────── */
+
+.gaya-chip {
+  border: 2px solid var(--color-ink);
+  background: var(--color-bg);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s ease, transform 0.08s ease, box-shadow 0.1s ease;
+  border-radius: 0;
+}
+
+.gaya-chip:hover {
+  background: var(--color-accent);
+  transform: translate(1px, 1px);
+}
+
+.gaya-chip--active {
+  background: var(--color-accent);
+  box-shadow: 3px 3px 0 var(--color-ink);
+}
+
+/* ─── Stats Pill ────────────────────────────────────────────────────────────── */
+
+.stats-pill {
+  border: 2px solid var(--color-ink);
+  background: var(--color-card);
+  padding: 0.125rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ─── Range Slider Styling ──────────────────────────────────────────────────── */
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--color-ink);
+  outline: none;
+  border: 2px solid var(--color-ink);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--color-accent);
+  border: 3px solid var(--color-ink);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--color-ink);
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--color-accent);
+  border: 3px solid var(--color-ink);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--color-ink);
+}
+
+/* ─── Select Styling ────────────────────────────────────────────────────────── */
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%230a0a0a'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 2rem;
 }
 
 /* Signature element: kartu dengan border tebal + hard shadow (bukan blur),
@@ -31,6 +384,11 @@ body {
   border: var(--border-w) solid var(--color-ink);
   box-shadow: 8px 8px 0 var(--color-ink);
   border-radius: 0;
+  transition: background-color 0.3s ease, box-shadow 0.15s ease;
+}
+
+.brutal-card:hover {
+  box-shadow: 10px 10px 0 var(--color-ink);
 }
 
 .brutal-btn {
@@ -64,6 +422,7 @@ body {
   border: var(--border-w) solid var(--color-ink);
   border-radius: 0;
   background: #fff;
+  transition: box-shadow 0.15s ease, background-color 0.3s ease;
 }
 
 .brutal-input:focus {
@@ -93,7 +452,7 @@ body {
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.1s ease, transform 0.08s ease;
+  transition: background 0.1s ease, transform 0.08s ease, box-shadow 0.1s ease;
   border-radius: 0;
 }
 
@@ -132,7 +491,7 @@ body {
 
 .naskah-paragraph {
   margin-bottom: 0;
-  min-height: 1.2em; /* Pertahankan tinggi baris kosong */
+  min-height: 1.2em;
 }
 
 /* ─── Streaming Cursor ──────────────────────────────────────────────────────── */
@@ -141,12 +500,12 @@ body {
   display: inline-block;
   animation: blink 0.7s step-end infinite;
   font-weight: 400;
-  color: var(--color-ink);
-  opacity: 0.6;
+  color: var(--color-accent);
+  opacity: 1;
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 0.6; }
+  0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
 
@@ -175,15 +534,39 @@ body {
   border-radius: 2px;
 }
 
+html.dark .skeleton-line {
+  background: linear-gradient(90deg, #333 25%, #3a3a3a 50%, #333 75%);
+  background-size: 200% 100%;
+}
+
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
+/* ─── Custom Scrollbar ──────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink);
+  border: 2px solid var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
 /* ─── Print / PDF ───────────────────────────────────────────────────────────── */
 
 @media print {
-  /* Sembunyikan semua kecuali area print */
   body {
     background: white;
     color: black;
@@ -208,7 +591,6 @@ body {
     border-bottom-color: #aaa;
   }
 
-  /* Hanya tampilkan section hasil */
   main > header,
   main > section:first-of-type {
     display: none;
@@ -223,6 +605,8 @@ body {
   }
 }
 
+/* ─── Reduced Motion ────────────────────────────────────────────────────────── */
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -230,4 +614,27 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ─── Selection ─────────────────────────────────────────────────────────────── */
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+/* ─── Focus Ring ────────────────────────────────────────────────────────────── */
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ─── Smooth Transitions ────────────────────────────────────────────────────── */
+
+* {
+  scroll-behavior: smooth;
 }

@@ -4,14 +4,84 @@ interface GenerateParams {
   kategori: string;
   tema: string;
   durasi: number;
+  targetKata: number;
+  maxTokens: number;
   systemPrompt: string;
+  userPrompt: string;
+}
+
+export async function generateWithGemini({
+  kategori,
+  tema,
+  durasi,
+  targetKata,
+  maxTokens,
+  systemPrompt,
+  userPrompt,
+}: GenerateParams): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: { temperature: 0.8, maxOutputTokens: maxTokens },
+    }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new GeminiError(`Gemini API error ${res.status}: ${body}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
+
+interface RefineParams {
+  systemPrompt: string;
+  refinePrompt: string;
+  maxTokens: number;
+}
+
+export async function refineWithGemini({
+  systemPrompt,
+  refinePrompt,
+  maxTokens,
+}: RefineParams): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: refinePrompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: maxTokens },
+    }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new GeminiError(`Gemini refine error ${res.status}: ${body}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
 export async function streamWithGemini({
   kategori,
   tema,
   durasi,
+  targetKata,
+  maxTokens,
   systemPrompt,
+  userPrompt,
 }: GenerateParams): Promise<ReadableStream<Uint8Array>> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${process.env.GEMINI_API_KEY}`;
 
@@ -23,16 +93,12 @@ export async function streamWithGemini({
       contents: [
         {
           role: "user",
-          parts: [
-            {
-              text: `Buatkan naskah untuk kategori "${kategori}" dengan tema "${tema}", durasi sekitar ${durasi} menit.`,
-            },
-          ],
+          parts: [{ text: userPrompt }],
         },
       ],
-      generationConfig: { temperature: 0.8, maxOutputTokens: 2048 },
+      generationConfig: { temperature: 0.8, maxOutputTokens: maxTokens },
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(60_000),
   });
 
   if (!res.ok) {

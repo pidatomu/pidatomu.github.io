@@ -1,0 +1,13 @@
+{
+  "name": "Pidatomu - Asisten Naskah Pidato Islami",
+  "short_name": "Pidatomu",
+  "description": "Buat naskah khutbah, kultum, dan pidato islami berkualitas tinggi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffcf2",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

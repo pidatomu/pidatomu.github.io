@@ -4,14 +4,96 @@ interface GenerateParams {
   kategori: string;
   tema: string;
   durasi: number;
+  targetKata: number;
+  maxTokens: number;
   systemPrompt: string;
+  userPrompt: string;
+}
+
+export async function generateWithGroq({
+  kategori,
+  tema,
+  durasi,
+  targetKata,
+  maxTokens,
+  systemPrompt,
+  userPrompt,
+}: GenerateParams): Promise<string> {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      stream: false,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.8,
+      max_tokens: maxTokens,
+    }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new GroqError(`Groq API error ${res.status}: ${body}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
+interface RefineParams {
+  systemPrompt: string;
+  refinePrompt: string;
+  maxTokens: number;
+}
+
+export async function refineWithGroq({
+  systemPrompt,
+  refinePrompt,
+  maxTokens,
+}: RefineParams): Promise<string> {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      stream: false,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: refinePrompt },
+      ],
+      temperature: 0.7,
+      max_tokens: maxTokens,
+    }),
+    signal: AbortSignal.timeout(120_000),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new GroqError(`Groq refine error ${res.status}: ${body}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? "";
 }
 
 export async function streamWithGroq({
   kategori,
   tema,
   durasi,
+  targetKata,
+  maxTokens,
   systemPrompt,
+  userPrompt,
 }: GenerateParams): Promise<ReadableStream<Uint8Array>> {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
@@ -24,15 +106,12 @@ export async function streamWithGroq({
       stream: true,
       messages: [
         { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: `Buatkan naskah untuk kategori "${kategori}" dengan tema "${tema}", durasi sekitar ${durasi} menit.`,
-        },
+        { role: "user", content: userPrompt },
       ],
       temperature: 0.8,
-      max_tokens: 2048,
+      max_tokens: maxTokens,
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(60_000),
   });
 
   if (!res.ok) {

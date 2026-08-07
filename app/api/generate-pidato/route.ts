@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       namaLokasi,
       tanggal,
       gayaBahasa,
+      targetKata,
     } = body;
 
     if (!kategori || !tema || !durasi) {
@@ -58,34 +59,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- Generate stream
+    // --- Generate with streaming
     const { stream, provider } = await streamNaskahPidato({
       kategori,
       tema,
       durasi,
+      targetKata: targetKata ?? Math.round(durasi * 130),
       personalisasi: { namaPenceramah, namaLokasi, tanggal, gayaBahasa },
     });
 
-    // --- Pipe stream + kumpulkan teks untuk simpan ke DB
-    const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
-    const decoder = new TextDecoder();
-    let fullText = "";
+    // --- Tee the stream: one for response, one for saving to DB
+    const [clientStream, dbStream] = stream.tee();
 
-    const writer = writable.getWriter();
-    const reader = stream.getReader();
-
+    // --- Save to DB in background (read full stream, then insert)
     const shareToken = crypto.randomUUID();
-
-    // Background: kumpulkan teks, simpan ke DB setelah selesai
     (async () => {
       try {
+        const reader = dbStream.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           fullText += decoder.decode(value, { stream: true });
-          await writer.write(value);
         }
-        await writer.close();
 
         const { error: insertError } = await supabase.from("speeches").insert({
           owner_type: owner.type,
@@ -105,19 +102,17 @@ export async function POST(req: NextRequest) {
           console.error("[generate-pidato] gagal simpan:", insertError.message);
         }
       } catch (err) {
-        console.error("[generate-pidato] stream error:", err);
-        writer.abort(err);
+        console.error("[generate-pidato] background save error:", err);
       }
     })();
 
-    return new Response(readable, {
+    // --- Return streaming response with metadata headers
+    return new Response(clientStream, {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "X-Provider": provider,
         "X-Remaining": String(rl.limit - rl.currentCount),
         "X-Share-Token": shareToken,
-        "X-Content-Type-Options": "nosniff",
-        "X-Accel-Buffering": "no",
       },
     });
   } catch (err) {

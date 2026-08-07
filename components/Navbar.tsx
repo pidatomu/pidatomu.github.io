@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { PenLine, History } from "lucide-react";
+import DarkModeToggle from "./DarkModeToggle";
 
 export default function Navbar() {
   const pathname = usePathname();
 
   const links = [
-    { href: "/", label: "Buat Naskah" },
-    { href: "/histori", label: "Riwayat" },
+    { href: "/", label: "Buat Naskah", icon: <PenLine className="w-3 h-3" /> },
+    { href: "/histori", label: "Riwayat", icon: <History className="w-3 h-3" /> },
   ];
 
   return (
@@ -26,12 +28,16 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`navbar-link ${pathname === link.href ? "navbar-link--active" : ""}`}
+              className={`navbar-link inline-flex items-center gap-1.5 ${pathname === link.href ? "navbar-link--active" : ""}`}
             >
-              {link.label}
+              {link.icon}
+              <span>{link.label}</span>
             </Link>
           ))}
         </div>
+
+        {/* Dark Mode Toggle */}
+        <DarkModeToggle compact />
 
         {/* Badge MBS */}
         <span className="navbar-badge">MBS Tanggul</span>
